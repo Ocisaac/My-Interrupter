@@ -33,6 +33,9 @@ namespace BraketPrasing
             try { var bfail = Bracket.Parse("(()"); }
             catch { Console.WriteLine("failed bf4"); }
 
+            try { var bfail = Bracket.Parse("(5(3)3)");}
+            catch { Console.WriteLine("failed bf5"); }
+
             var b4 = Bracket.ParseMany(Console.ReadLine()); 
             foreach (var b in b4)
             {
@@ -47,7 +50,7 @@ namespace BraketPrasing
     class Bracket
     {
         public List<Bracket> inside = new List<Bracket>();
-        public int? value;
+        public int? value= null;
 
         public Bracket()
         {
@@ -93,19 +96,22 @@ namespace BraketPrasing
                 loc++;
                 if (bracketCount == 0)
                 {
+                    var b = new Bracket();
                     int v = 0;
                     bool suc = int.TryParse(parseString, out v); //TO DO TO DO
                     if (suc)
                     {
-                        yield return new Bracket(v);
+                        if (b.value == null)
+                            b.value = v;
+                        else
+                            throw new Exception("cannot value twice");
                         //b.inside.Add(new Bracket(v));
                     }
                     else
                     {
-                        var b = new Bracket();
                         b.inside = ParseAsArr(parseString).ToList();
-                        yield return b;
                     }
+                    yield return b;
                     startingpos = ++loc;
                     parseString = "";
                 }
@@ -134,11 +140,13 @@ namespace BraketPrasing
         public static Bracket Parse(string s)
         {
             Regex bracketRegex = new Regex(@"^\(+[0-9\(\)]+\)+$");
-
+            Regex invalidBracket = new Regex(@"[0-9]+\(");
             if (!bracketRegex.IsMatch(s))
                 throw new InvalidOperationException();
             if (s.Where(c => c == '(').Count(c => true) != s.Where(c => c == ')').Count(c => true))
                 throw new InvalidOperationException();
+            if (invalidBracket.IsMatch(s))
+                throw new InvalidOperationException("brackets with inner brackets cannot have values");
 
             Bracket b = new Bracket();
             int bracketCount = 0;
@@ -160,7 +168,10 @@ namespace BraketPrasing
                     bool suc = int.TryParse(parseString, out v); //TO DO TO DO
                     if (suc)
                     {
-                        b.value = v;
+                        if (b.value == null)
+                            b.value = v;
+                        else 
+                            throw new Exception("A bracket cannot have more then one value");
                         //b.inside.Add(new Bracket(v));
                     }
                     else
@@ -171,11 +182,7 @@ namespace BraketPrasing
             }
             return b;
         }
-        /// <summary>
-        /// not the best, but it will parse brackets when they are right
-        /// </summary>
-        /// <param name="s"></param>
-        /// <returns></returns>
+        
         public static bool TryParse(string s, out Bracket result)
         {
             result = null;
@@ -189,11 +196,7 @@ namespace BraketPrasing
                 return false;
             }
         }
-        /// <summary>
-        /// not the best, but it will parse brackets when they are right
-        /// </summary>
-        /// <param name="s"></param>
-        /// <returns></returns>
+
         public static bool TryParseMany(string s, out Bracket[] result)
         {
             result = null;
