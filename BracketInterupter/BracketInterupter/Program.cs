@@ -19,8 +19,7 @@ namespace BraketPrasing
 
             var b3 = Bracket.Parse("((6)(3))"); //works
             Console.WriteLine(b3.ToString());
-
-
+            
             try { var bfail = Bracket.Parse("(("); }
             catch { Console.WriteLine("failed bf1"); }
 
