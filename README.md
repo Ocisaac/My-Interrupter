@@ -4,11 +4,12 @@ I started with a bracket parsing project, and I plan to progress untill I can ev
 
 I hope you'll find my learning process intresting.
 
-~~What I've done so far~~
+~~~What I've done so far~~~
 
 1. Parsed parens\brackets of the sort ((5)((3)(2))) 
 
-~~What I plan to so~~
+~~~What I plan to so~~~
+
 1. Be able to parse and calculate math expressions like `5 - 3 * 2` (with order of operations) 
 
 2. be able to parse and calculate math expression like `(5 + 2) * 3` (including parens) 
