@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace BraketPrasing
+namespace BracketPrasing
 {
     class Program
     {
@@ -13,13 +13,16 @@ namespace BraketPrasing
             //testing
             var b1 = Bracket.Parse("(4)"); //works
             Console.WriteLine(b1.ToString());
+            Console.WriteLine(b1.Sum());
 
             var b2 = Bracket.Parse("((7))"); // works
             Console.WriteLine(b2.ToString());
+            Console.WriteLine(b2.Sum());
 
             var b3 = Bracket.Parse("((6)(3))"); //works
             Console.WriteLine(b3.ToString());
-            
+            Console.WriteLine(b3.Sum());
+
             try { var bfail = Bracket.Parse("(("); }
             catch { Console.WriteLine("failed bf1"); }
 
@@ -38,9 +41,12 @@ namespace BraketPrasing
             try { var bfail = Bracket.Parse("((6)())"); }
             catch { Console.WriteLine("failed bf6"); }
 
-            var b4 = Bracket.ParseMany(Console.ReadLine()); 
+            var b4 = Bracket.ParseMany(Console.ReadLine());
             foreach (var b in b4)
-                Console.WriteLine(b);                
+            {
+                Console.WriteLine(b);
+                Console.WriteLine(b.Sum());
+            }
             Console.ReadKey();
         }
     }
@@ -52,6 +58,14 @@ namespace BraketPrasing
         public Bracket()
         {
 
+        }
+
+        public int Sum()
+        {
+            if (this.value != null)
+                return (int)value;
+            else
+                return inside.Select(b => b.Sum()).Sum();            
         }
 
         public Bracket(int val)
@@ -78,7 +92,7 @@ namespace BraketPrasing
         /// <returns></returns>
         private static IEnumerable<Bracket> ParseAsIE(string s)
         {
-            Regex bracketRegex = new Regex(@"^\(+[0-9\(\)]+\)+$");
+            Regex bracketRegex = new Regex(@"^\(+[0-9\-\(\)]+\)+$");
             Regex invalidBracket = new Regex(@"[0-9]+\(");
             if (!bracketRegex.IsMatch(s))
                 throw new InvalidOperationException();
@@ -134,7 +148,7 @@ namespace BraketPrasing
         /// <returns></returns>
         public static Bracket[] ParseMany(string s)
         {
-            Regex bracketRegex = new Regex(@"^\(+[0-9\(\)]+\)+$");
+            Regex bracketRegex = new Regex(@"^\(+[0-9\-\(\)]+\)+$");
             if (!bracketRegex.IsMatch(s))
                 throw new InvalidOperationException();
             if (s.Where(c => c == '(').Count(c => true) != s.Where(c => c == ')').Count(c => true))

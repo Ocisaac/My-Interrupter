@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{1FDCA290-B278-47D2-9CBC-8EF1568B574F}</ProjectGuid>
+    <ProjectGuid>{25E3A5F6-3022-415E-8039-9C4068EDE65F}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>BracketInterupter</RootNamespace>
