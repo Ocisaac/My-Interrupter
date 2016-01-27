@@ -36,17 +36,15 @@ namespace BraketPrasing
             try { var bfail = Bracket.Parse("(5(3)3)");}
             catch { Console.WriteLine("failed bf5"); }
 
+            try { var bfail = Bracket.Parse("((6)())"); }
+            catch { Console.WriteLine("failed bf6"); }
+
             var b4 = Bracket.ParseMany(Console.ReadLine()); 
             foreach (var b in b4)
-            {
-                Console.WriteLine(b);
-            }
+                Console.WriteLine(b);                
             Console.ReadKey();
         }
     }
-
-
-
     class Bracket
     {
         public List<Bracket> inside = new List<Bracket>();
@@ -60,7 +58,7 @@ namespace BraketPrasing
         public Bracket(int val)
         {
             value = val;
-        }
+        }       
 
         public override string ToString()
         {
@@ -79,8 +77,18 @@ namespace BraketPrasing
         /// </summary>
         /// <param name="s"></param>
         /// <returns></returns>
-        private static IEnumerable<Bracket> ParseAsArr(string s)
+        private static IEnumerable<Bracket> ParseAsIE(string s)
         {
+            Regex bracketRegex = new Regex(@"^\(+[0-9\(\)]+\)+$");
+            Regex invalidBracket = new Regex(@"[0-9]+\(");
+            if (!bracketRegex.IsMatch(s))
+                throw new InvalidOperationException();
+            if (s.Where(c => c == '(').Count(c => true) != s.Where(c => c == ')').Count(c => true))
+                throw new InvalidOperationException();
+            if (invalidBracket.IsMatch(s))
+                throw new InvalidOperationException("brackets with inner brackets cannot have values");
+
+
             int bracketCount = 0;
             int loc = 0;
             string parseString = "";
@@ -96,6 +104,9 @@ namespace BraketPrasing
                 loc++;
                 if (bracketCount == 0)
                 {
+                    if (parseString == "")
+                        throw new Exception("brackets must not be empty");
+
                     var b = new Bracket();
                     int v = 0;
                     bool suc = int.TryParse(parseString, out v); //TO DO TO DO
@@ -109,7 +120,7 @@ namespace BraketPrasing
                     }
                     else
                     {
-                        b.inside = ParseAsArr(parseString).ToList();
+                        b.inside = ParseAsIE(parseString).ToList();
                     }
                     yield return b;
                     startingpos = ++loc;
@@ -130,7 +141,7 @@ namespace BraketPrasing
             if (s.Where(c => c == '(').Count(c => true) != s.Where(c => c == ')').Count(c => true))
                 throw new InvalidOperationException();
 
-            return ParseAsArr(s).ToArray();
+            return ParseAsIE(s).ToArray();
         }
         /// <summary>
         /// not the best, but it will parse brackets when they are right
@@ -164,6 +175,10 @@ namespace BraketPrasing
                 loc++;
                 if (bracketCount == 0)
                 {
+                    if (parseString == "")
+                        throw new Exception("brackets must not be empty");
+
+
                     int v = 0;
                     bool suc = int.TryParse(parseString, out v); //TO DO TO DO
                     if (suc)
@@ -175,7 +190,7 @@ namespace BraketPrasing
                         //b.inside.Add(new Bracket(v));
                     }
                     else
-                        b.inside.InsertRange(b.inside.Count, ParseAsArr(parseString));
+                        b.inside.InsertRange(b.inside.Count, ParseAsIE(parseString));
                     startingpos = ++loc;
                     parseString = "";
                 }
