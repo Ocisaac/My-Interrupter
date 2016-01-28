@@ -58,7 +58,7 @@ namespace BracketPrasing
         public Bracket()
         {
 
-        }
+        }        
 
         public int Sum()
         {
