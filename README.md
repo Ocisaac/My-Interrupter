@@ -8,13 +8,13 @@ I hope you'll find my learning process intresting.
 
 1. Parsed parens\brackets of the sort ((5)((3)(2))) 
 
+2. Be able to parse and calculate math expressions like `5 - 3 * 2` (with order of operations) 
+
 ##What I plan to so
 
-1. Be able to parse and calculate math expressions like `5 - 3 * 2` (with order of operations) 
+1. be able to parse and calculate math expression like `(5 + 2) * 3` (including parens) 
 
-2. be able to parse and calculate math expression like `(5 + 2) * 3` (including parens) 
-
-3. Be able to parse equations like `2x + 5 = 4`
+2. Be able to parse equations like `2x + 5 = 4`
 
     1. Be able to simplfy equations
 
