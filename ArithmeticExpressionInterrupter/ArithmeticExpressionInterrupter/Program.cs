@@ -126,55 +126,90 @@ namespace ArithmeticExpressionInterrupter
         {
             s = new string(s.Where(c => c != ' ').ToArray());
             float v = 0f;
+            string InsideBrackets = "";
+            int bracketCount = 0;
+            if (s.StartsWith("(") && s.EndsWith(")"))
+                return Parse(s.Substring(1, s.Length - 2));
+
             if (Single.TryParse(s, out v))
                 return new ArithmeticEx(v);
-            Regex arithExRegex = new Regex(@"^-?[0-9\.]+[\^\.\-0-9\+\*/-]+\-?[0-9\.]+$");
+            Regex arithExRegex = new Regex(@"^[\(\)\^\.\-0-9\+\*/-]+$");
             if (!arithExRegex.IsMatch(s))
                 throw new Exception("invalid string");
-            
+            if (s.Count(c => c == '(') != s.Count(c => c == ')'))
+        //        throw new Exception("parens must balance");
+
             if (s.StartsWith("-"))
                 s = "0" + s;
 
             for (int i = s.Length - 1; i >= 0; i--)
             {
-                if (s[i] == '+')
-                    return new ArithmeticEx(
-                        Parse(s.Substring(0, i)),
-                        Operation.Addtion,
-                        Parse(s.Substring(i + 1, s.Length - (i + 1))));
+                if (s[i] == '(')
+                    bracketCount++;
+                if (s[i] == ')')
+                    bracketCount--;
+                if (bracketCount != 0)
+                    InsideBrackets = s[i] + InsideBrackets;
+                else
+                {
+                    if (s[i] == '+')
+                        return new ArithmeticEx(
+                            Parse(s.Substring(0, i)),
+                            Operation.Addtion,
+                            Parse(s.Substring(i + 1, s.Length - (i + 1))));
 
-                if (s[i] == '-')
-                    return new ArithmeticEx(
-                        Parse(s.Substring(0, i )),
-                        Operation.Subtrubtion,
-                        Parse(s.Substring(i + 1, s.Length - (i + 1))));
+                    if (s[i] == '-')
+                        return new ArithmeticEx(
+                            Parse(s.Substring(0, i)),
+                            Operation.Subtrubtion,
+                            Parse(s.Substring(i + 1, s.Length - (i + 1))));
+                }
             }
 
             for (int i = s.Length - 1; i >= 0; i--)
             {
-                if (s[i] == '*')
-                    return new ArithmeticEx(
-                        Parse(s.Substring(0, i)),
-                        Operation.Multiplication,
-                        Parse(s.Substring(i + 1, s.Length - (i + 1))));
+                if (s[i] == '(')
+                    bracketCount++;
+                if (s[i] == ')')
+                    bracketCount--;
+                if (bracketCount != 0)
+                    InsideBrackets = s[i] + InsideBrackets;
+                else
+                {
+                    if (s[i] == '*')
+                        return new ArithmeticEx(
+                            Parse(s.Substring(0, i)),
+                            Operation.Multiplication,
+                            Parse(s.Substring(i + 1, s.Length - (i + 1))));
 
-                if (s[i] == '/')
-                    return new ArithmeticEx(
-                        Parse(s.Substring(0, i)),
-                        Operation.Division,
-                        Parse(s.Substring(i + 1, s.Length - (i + 1))));
+                    if (s[i] == '/')
+                        return new ArithmeticEx(
+                            Parse(s.Substring(0, i)),
+                            Operation.Division,
+                            Parse(s.Substring(i + 1, s.Length - (i + 1))));
+                }
             }
 
             for (int i = s.Length - 1; i >= 0; i--)
             {
-                if (s[i] == '^')
-                    return new ArithmeticEx(
-                        Parse(s.Substring(0, i)),
-                        Operation.Power,
-                        Parse(s.Substring(i + 1, s.Length - (i + 1)))); 
+                if (s[i] == '(')
+                    bracketCount++;
+                if (s[i] == ')')
+                    bracketCount--;
+                if (bracketCount != 0)
+                    InsideBrackets = s[i] + InsideBrackets;
+                else
+                {
+                    if (s[i] == '^')
+                        return new ArithmeticEx(
+                            Parse(s.Substring(0, i)),
+                            Operation.Power,
+                            Parse(s.Substring(i + 1, s.Length - (i + 1))));
+                }
             }
-
+            
             throw new Exception("");
         }
+        
     }
 }
