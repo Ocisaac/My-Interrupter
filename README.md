@@ -10,11 +10,11 @@ I hope you'll find my learning process intresting.
 
 2. Be able to parse and calculate math expressions like `5 - 3 * 2` (with order of operations) 
 
+3. be able to parse and calculate math expression like `(5 + 2) * 3` (including parens) 
+
 ##What I plan to so
 
-1. be able to parse and calculate math expression like `(5 + 2) * 3` (including parens) 
-
-2. Be able to parse equations like `2x + 5 = 4`
+1. Be able to parse equations like `2x + 5 = 4`
 
     1. Be able to simplfy equations
 
