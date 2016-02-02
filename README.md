@@ -21,6 +21,8 @@ I hope you'll find my learning process intresting.
 2. Be able to solve equations (only up to quadratic)
 
 ===================================================
+
+`
 feature      | status
 ----------------
 parse parens | DONE
@@ -28,4 +30,5 @@ parse arith  | DONE
 calcu arith  | DONE
 parse algeb  | DONE
 simpl algeb  | IN PROGRESS
-solve algeb  | TODO
+solve algeb  | TODO 
+`
