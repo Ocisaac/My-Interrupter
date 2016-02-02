@@ -6,16 +6,18 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
+
 namespace ArithmeticExpressionInterrupter
 {
     class Program
     {
         static void Main(string[] args)
         {
+            /*there it a problem with paren of the sort (2+1)/(2)*/
             while (true)
             {
                 ArithmeticEx ex1 = ArithmeticEx.Parse(Console.ReadLine());
-                Console.WriteLine("Calculation Result: " + ex1.LoggerCalculate(""));
+                Console.WriteLine("Calculation Result: " + ex1.Calculate());
                 Console.WriteLine("================================================================================");
             }
         }
@@ -128,16 +130,22 @@ namespace ArithmeticExpressionInterrupter
             float v = 0f;
             string InsideBrackets = "";
             int bracketCount = 0;
+            if (s.Count(c => c == '(') != s.Count(c => c == ')'))
+                throw new Exception("parens must balance");
+
             if (s.StartsWith("(") && s.EndsWith(")"))
-                return Parse(s.Substring(1, s.Length - 2));
+            {
+                int leftParen = s.Substring(1, s.Length - 2).IndexOf("(");
+                int rightParen = s.Substring(1, s.Length - 2).IndexOf(")");
+                if (leftParen <= rightParen)
+                    return Parse(s.Substring(1, s.Length - 2));
+            }
 
             if (Single.TryParse(s, out v))
                 return new ArithmeticEx(v);
             Regex arithExRegex = new Regex(@"^[\(\)\^\.\-0-9\+\*/-]+$");
             if (!arithExRegex.IsMatch(s))
                 throw new Exception("invalid string");
-            if (s.Count(c => c == '(') != s.Count(c => c == ')'))
-        //        throw new Exception("parens must balance");
 
             if (s.StartsWith("-"))
                 s = "0" + s;
@@ -207,9 +215,7 @@ namespace ArithmeticExpressionInterrupter
                             Parse(s.Substring(i + 1, s.Length - (i + 1))));
                 }
             }
-            
             throw new Exception("");
-        }
-        
+        }        
     }
 }
