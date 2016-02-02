@@ -22,13 +22,11 @@ I hope you'll find my learning process intresting.
 
 ===================================================
 
-`
-feature      | status
-----------------
-parse parens | DONE
-parse arith  | DONE
-calcu arith  | DONE
-parse algeb  | DONE
-simpl algeb  | IN PROGRESS
-solve algeb  | TODO 
-`
+|feature     | status|
+|------------|----|
+|parse parens| DONE|
+|parse arith | DONE|
+|calcu arith | DONE|
+|parse algeb | DONE|
+|simpl algeb | IN PROGRESS|
+|solve algeb | TODO|
