@@ -12,10 +12,11 @@ namespace AlgebraicExprssionIntrrupter
         /*problem with paren of sort (x + 1)/(x + 2)*/
         static void Main(string[] args)
         {
-            var treeEx = AlgebExpression.Parse("(2x-1)/(2x+1)=0");
-            Console.WriteLine(treeEx);
-            Console.WriteLine(treeEx.SimplifyEquality());
-            Console.WriteLine(treeEx.SimplifyDivision());
+            var treeEx = AlgebExpression.Parse("1=2x - 3x^2 + 1 - 4x");
+            Console.WriteLine(treeEx);  
+            Console.WriteLine(treeEx.SimplifyEquality().SubtructionToNegAddition());
+            Console.WriteLine(treeEx.SimplifyEquality().SubtructionToNegAddition().LeftAlignAddition());
+            Console.WriteLine(treeEx.SimplifyDivision().SimplifyEquality());
         }
     }
 
@@ -91,13 +92,14 @@ namespace AlgebraicExprssionIntrrupter
 
         public static AlgebVal operator /(AlgebVal left, AlgebVal right)
         {
-            return new AlgebVal(left.Coaf / right.Coaf, left.Pow - right.Pow);
+            if (left.Pow >= right.Pow)
+                return new AlgebVal(left.Coaf / right.Coaf, left.Pow - right.Pow);
+            else throw new ArgumentException("can't m8");
         }
-
 
         public static AlgebVal operator -(AlgebVal left, AlgebVal right)
         {
-            if (left.Pow != right.Pow)
+            if (left.Pow != right.Pow && left.Coaf != 0 && right.Coaf != 0)
                 throw new InvalidOperationException("must have same power");
             return new AlgebVal(left.Coaf - right.Coaf, left.Pow);
         }
@@ -115,6 +117,10 @@ namespace AlgebraicExprssionIntrrupter
             return !(left == right);
         }
 
+        public static implicit operator AlgebVal(float i) =>
+            new AlgebVal(i, 0);
+        
+
         public override string ToString() =>
             this == Zero ? "0" : (Coaf == 0 ? "" : Coaf.ToString()) + ((Pow > 1) ? "x^" + Pow.ToString() : Pow == 1 ? "x" : "");
     }
@@ -126,6 +132,58 @@ namespace AlgebraicExprssionIntrrupter
         public AlgebExpression right;
         public AlgebVal? value;
 
+        public AlgebExpression SimplyfyZeroAddition()
+        {
+            if (this.op == Operation.Value)
+                return this;
+            var temp = this.LeftAlignAddition();
+
+            if (temp.right.value.Value.Coaf == 0)
+                return temp.left.SimplyfyZeroAddition();
+            else
+                return temp.left.SimplyfyZeroAddition() + temp.right;
+        }
+
+        public AlgebExpression LeftAlignAddition()
+        {
+            if (this.op == Operation.Equality)
+            {
+                var leftleft = left.LeftAlignAddition();
+                return new AlgebExpression(this.left.LeftAlignAddition(), Operation.Equality, right.LeftAlignAddition());
+            }
+            if (this.op == Operation.Value)
+                return this;
+            if (this.op != Operation.Addition)
+                throw new InvalidOperationException("to align addition all ops must be addition");
+            if (this.right.op == Operation.Value)
+                return left.LeftAlignAddition() + right;
+            if (this.left.op == Operation.Value)
+                return right.LeftAlignAddition() + left;
+            if (left.op == Operation.Addition && right.op == Operation.Addition)
+            {
+                left = left.LeftAlignAddition();
+                right = right.LeftAlignAddition();
+                return new AlgebExpression
+                    (((left.left + right.right)
+                        + left.right)
+                        + right.left)
+                        .LeftAlignAddition();
+            }
+
+            throw new Exception("sumthing went wrong");
+        }
+
+        public AlgebExpression SubtructionToNegAddition()
+        {
+            if (this.op == Operation.Value)
+                return value;
+            this.left = left.SubtructionToNegAddition();
+            this.right = right.SubtructionToNegAddition();
+            if (this.op == Operation.Subtraction)
+                return new AlgebExpression(left, Operation.Addition, right * -1);
+            return this;
+        }
+
         public AlgebExpression SimplifyEquality()
         {
             if (op == Operation.Equality)
@@ -133,22 +191,32 @@ namespace AlgebraicExprssionIntrrupter
                     return this - right;
             return this;
         }
-        //TODO fix
-        //public AlgebExpression SimplifyDivision() =>
-        //    SimplifyDivsion(this, this);
-        //private static AlgebExpression SimplifyDivsion(AlgebExpression currTree, AlgebExpression bigTree)
-        //{
-        //    if (currTree.op == Operation.Value)
-        //        return bigTree;
-        //    currTree.left = SimplifyDivsion(currTree.left, currTree);
-        //    currTree.right = SimplifyDivsion(currTree.right, currTree);
-        //    if (currTree.op == Operation.Division)
-        //        bigTree = bigTree * currTree.right;
-        //    return bigTree;
-        //}
+
+        public AlgebExpression SimplifyDivision()
+        {
+            var myThis = this;
+            return SimplifyDivsion(this, ref myThis, true);
+        }
+        private static AlgebExpression SimplifyDivsion(AlgebExpression currTree, ref AlgebExpression bigTree, bool rtnBig)
+        {
+            if (currTree.op == Operation.Value)
+                return currTree;
+            
+            currTree.left = SimplifyDivsion(currTree.left, ref bigTree, false);
+            currTree.right = SimplifyDivsion(currTree.right, ref bigTree, false);
+            
+            if (currTree.op == Operation.Division)
+            {
+                bigTree = bigTree * currTree.right;
+            }
+            return rtnBig ? bigTree : currTree;
+        }
 
         public static implicit operator AlgebExpression(AlgebVal av) =>
             new AlgebExpression(av);
+
+        public static implicit operator AlgebExpression(float i) =>
+            new AlgebExpression(i);
 
         public AlgebExpression(AlgebExpression l, Operation o, AlgebExpression r)
         {
@@ -299,11 +367,6 @@ namespace AlgebraicExprssionIntrrupter
                 return new AlgebExpression(left.left + right, Operation.Equality, left.right + right);
             if (right.op == Operation.Equality)
                 return new AlgebExpression(right.left + left, Operation.Equality, right.right + left);
-
-            if (left.op == Operation.Addition)
-                return new AlgebExpression(left.left * right, Operation.Addition, left.right * right);
-            if (right.op == Operation.Addition)
-                return new AlgebExpression(right.left * left, Operation.Addition, right.right * left);
             
             return new AlgebExpression(left, Operation.Addition, right);
         }
@@ -338,6 +401,7 @@ namespace AlgebraicExprssionIntrrupter
                 && right.op == Operation.Value)
                 return new AlgebExpression(left.value.Value * right.value.Value);
 
+           
             if (left.op == Operation.Equality && right.op == Operation.Equality)
                 throw new InvalidOperationException("can't be both =");
 
@@ -346,22 +410,28 @@ namespace AlgebraicExprssionIntrrupter
             if (right.op == Operation.Equality)
                 return new AlgebExpression(right.left * left, Operation.Equality, right.right * left);
 
+            if (left.op == Operation.Division && left.right == right)
+                return left.left;
+
+            if (right.op == Operation.Division && right.right == left)
+                return right;
+
+
             if (left.op == Operation.Addition || left.op == Operation.Subtraction)
                 return new AlgebExpression(left.left * right, left.op, left.right * right);
 
             if (right.op == Operation.Addition || right.op == Operation.Subtraction)
                 return new AlgebExpression(right.left * left, right.op, right.right * left);
-
-            if (left.op == Operation.Division && left.right == right)
-                return left;
-
-            if (right.op == Operation.Division && right.right == left)
-                return right;
-
             if (left.op == Operation.Multiplication)
                 return new AlgebExpression(left.left * right, Operation.Multiplication, left.right * right);
             if (right.op == Operation.Multiplication)
                 return new AlgebExpression(right.left * left, Operation.Multiplication, right.right * left);
+
+            if (left.op == Operation.Value)
+                return new AlgebExpression(left.value.Value * right.left);
+
+            if (right.op == Operation.Value)
+                return new AlgebExpression(right.value.Value * left.left);
 
             return new AlgebExpression(left, Operation.Multiplication, right);
         }
@@ -369,7 +439,8 @@ namespace AlgebraicExprssionIntrrupter
         public static AlgebExpression operator /(AlgebExpression left, AlgebExpression right)
         {
             if (left.op == Operation.Value
-                && right.op == Operation.Value)
+                && right.op == Operation.Value 
+                && left.value.Value.Pow >= right.value.Value.Pow)
                 return new AlgebExpression(left.value.Value / right.value.Value);
 
             if (left.op == Operation.Equality && right.op == Operation.Equality)
@@ -377,15 +448,13 @@ namespace AlgebraicExprssionIntrrupter
 
             if (left.op == Operation.Equality)
                 return new AlgebExpression(left.left / right, Operation.Equality, left.right / right);
+            
             if (right.op == Operation.Equality)
                 return new AlgebExpression(right.left / left, Operation.Equality, right.right / left);
 
-        //    if (left.op == Operation.Addition || left.op == Operation.Subtraction)
-        //        return new AlgebExpression(left.left / right, left.op, left.right / right);
-        //   
-        //    if (right.op == Operation.Addition || right.op == Operation.Subtraction)
-        //        return new AlgebExpression(right.left / left, right.op, right.right / left);
-
+        //   if (left.op == Operation.Addition || left.op == Operation.Subtraction)
+        //       return new AlgebExpression(left.left / right, left.op, left.right / right);
+           
             if (left == right)
                 return new AlgebVal(1, 0);
 
