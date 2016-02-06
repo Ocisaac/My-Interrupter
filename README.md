@@ -14,11 +14,9 @@ I hope you'll find my learning process intresting.
 
 4. Parsed equations like `2x + 5 = 4`
 
-##What I plan to do
+5. Be able to simplfy equations
 
-1. Be able to simplfy equations
-
-2. Be able to solve equations (only up to quadratic)
+6. Be able to solve equations (only up to quadratic)
 
 ===================================================
 
@@ -28,5 +26,5 @@ I hope you'll find my learning process intresting.
 |parse arith | DONE|
 |calcu arith | DONE|
 |parse algeb | DONE|
-|simpl algeb | IN PROGRESS|
-|solve algeb | TODO|
+|simpl algeb | DONE| 
+|solve algeb | DONE|
