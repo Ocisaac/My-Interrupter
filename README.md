@@ -20,11 +20,11 @@ I hope you'll find my learning process intresting.
 
 ===================================================
 
-|feature     | status|
-|------------|----|
+|feature|status|
+|:---:|:---:|
 |parse parens| DONE|
 |parse arith | DONE|
 |calcu arith | DONE|
 |parse algeb | DONE|
 |simpl algeb | DONE| 
-|solve algeb | DONE|
+|solve algeb | TO FIX|
