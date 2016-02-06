@@ -4,19 +4,32 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static System.Math;
 
 namespace AlgebraicExprssionIntrrupter
 {
     class Program
     {
-        /*problem with paren of sort (x + 1)/(x + 2)*/
+        // todo : varify solutions
         static void Main(string[] args)
         {
-            var treeEx = AlgebExpression.Parse("1=2x - 3x^2 + 1 - 4x");
-            Console.WriteLine(treeEx);  
-            Console.WriteLine(treeEx.SimplifyEquality().SubtructionToNegAddition());
-            Console.WriteLine(treeEx.SimplifyEquality().SubtructionToNegAddition().LeftAlignAddition());
-            Console.WriteLine(treeEx.SimplifyDivision().SimplifyEquality());
+            while (true)
+            {
+                try
+                {
+                    var treeEx = AlgebExpression.Parse(Console.ReadLine());
+                    var simpTree = treeEx.SimplifyAll();
+                    var solutions = simpTree.ToTrinom().FindSolution();
+
+                    foreach (var sol in solutions)
+                        Console.WriteLine(sol);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+                Console.WriteLine("=========================================");
+            }
         }
     }
 
@@ -50,6 +63,12 @@ namespace AlgebraicExprssionIntrrupter
         /// <returns></returns>
         public static AlgebVal Parse(string s)
         {
+            if (!s.Contains('x'))
+                s = s + "x^0";
+            if (s.EndsWith("x"))
+                s = s + "^1";
+            if (s.StartsWith("x"))
+                s = "1" + s;
             var sa = s.Split('x', '^');
             float f; int i;
             var b = Single.TryParse(sa[0], out f);
@@ -80,6 +99,10 @@ namespace AlgebraicExprssionIntrrupter
 
         public static AlgebVal operator +(AlgebVal left, AlgebVal right)
         {
+            if (left.Coaf == 0)
+                return right;
+            if (right.Coaf == 0)
+                return left;
             if (left.Pow != right.Pow)
                 throw new InvalidOperationException("must have same power");
             return new AlgebVal(left.Coaf + right.Coaf, left.Pow);
@@ -132,16 +155,78 @@ namespace AlgebraicExprssionIntrrupter
         public AlgebExpression right;
         public AlgebVal? value;
 
-        public AlgebExpression SimplyfyZeroAddition()
+        public Trinom ToTrinom()
+        {
+            if (this.op == Operation.Equality)
+                return Trinom.Parse(this.left.ToString());
+            return Trinom.Parse(this.ToString());
+        }
+
+        public AlgebExpression SimplifyAll() =>
+            this
+            .SimplifyDivision()
+            .SimplifyEquality()
+            .SimplifyMultiplication()
+            .SubtructionToNegAddition()
+            .LeftAlignAddition()
+            .SimplifyZeroAddition()
+            .SimplifyAddition();
+        
+        public AlgebExpression SimplifyAddition()
+        {
+            var tree = this.LeftAlignAddition();
+            if (tree.op == Operation.Equality)
+                return new AlgebExpression
+                    (this.left.SimplifyAddition(),
+                    Operation.Equality,
+                    right);
+            if (tree.op == Operation.Value)
+                return this;
+            tree.left = tree.left.SimplifyAddition();
+            tree = tree.left.LookAndAddValue(right.value.Value);
+            return tree;
+        }
+
+        private AlgebExpression LookAndAddValue(AlgebVal val)
+        {
+            if (val.Coaf == 0)
+                return this;
+            if (this.op == Operation.Value)
+                return this + val;
+            if (this.op == Operation.Addition)
+            {
+                if (this.right.value.Value.Coaf == 0)
+                    return left.LookAndAddValue(val);
+                else if (this.right.value.Value.Pow == val.Pow)
+                    return left + (right.value.Value + val);
+                else
+                    return left.LookAndAddValue(val) + right;
+            }
+            else
+                throw new InvalidOperationException("can only be done on addition trees");
+        }
+
+        public AlgebExpression SimplifyMultiplication()
+        {
+            if (op == Operation.Value)
+                return this;
+            left = left.SimplifyMultiplication();
+            right = right.SimplifyMultiplication();
+            if (op == Operation.Multiplication)
+                return left * right;
+            return this;
+        }
+
+        public AlgebExpression SimplifyZeroAddition()
         {
             if (this.op == Operation.Value)
                 return this;
             var temp = this.LeftAlignAddition();
 
             if (temp.right.value.Value.Coaf == 0)
-                return temp.left.SimplyfyZeroAddition();
+                return temp.left.SimplifyZeroAddition();
             else
-                return temp.left.SimplyfyZeroAddition() + temp.right;
+                return temp.left.SimplifyZeroAddition() + temp.right;
         }
 
         public AlgebExpression LeftAlignAddition()
@@ -480,5 +565,57 @@ namespace AlgebraicExprssionIntrrupter
             }
             return "";
         }
+    }
+    
+    class Trinom
+    {
+        public float a, b, c;
+        public Trinom(float _a, float _b, float _c)
+        {
+            a = _a; b = _b; c = _c;
+        }
+
+        public float[] FindSolution()
+        {
+            if (a == 0.0f)
+                return new float[] { -(c / b) };
+
+            if (b * b - 4 * a * c >= 0)
+                return new float[] 
+                {
+                    (float)(-b + Sqrt(b * b - 4 * a * c)) / (a * 2.0f),
+                    (float)(-b - Sqrt(b * b - 4 * a * c)) / (a * 2.0f)
+                };
+            else
+                throw new InvalidOperationException("delta must be >= 0");
+        }
+
+        public static Trinom Parse(string s)
+        {
+            var vals = new string(s.Where(c => c != '(' && c != ')').ToArray()).Split('+');
+            if (vals.Length > 3)
+                throw new InvalidOperationException("must be TRInom");
+            var tri = new Trinom(0, 0, 0);
+            foreach (var val in vals)
+            {
+                var algval = AlgebVal.Parse(val);
+                switch (algval.Pow)
+                {
+                    case 0:
+                        tri.c = algval.Coaf;
+                        break;
+                    case 1:
+                        tri.b = algval.Coaf;
+                        break;
+                    case 2:
+                        tri.a = algval.Coaf;
+                        break;
+                    default:
+                        throw new InvalidOperationException("must be up to 2nd power");
+                }
+            }
+            return tri;
+        }
+
     }
 }
