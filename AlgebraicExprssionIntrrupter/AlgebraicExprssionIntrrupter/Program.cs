@@ -55,11 +55,16 @@ namespace AlgebraicExprssionIntrrupter
         Value
     }
 
+    /// <summary>
+    /// of the shape (float)x^(int)
+    /// </summary>
     struct AlgebVal
     {
         public float Coaf;
         public int Pow;
-
+        /// <summary>
+        /// reperesents the 0 for the monoid that is AlgebVal
+        /// </summary>
         public static AlgebVal Zero = new AlgebVal(0, 0);
         public static AlgebVal One = new AlgebVal(1, 0);
 
@@ -110,6 +115,7 @@ namespace AlgebraicExprssionIntrrupter
             return false;
         }
 
+        #region Operators
         public static AlgebVal operator +(AlgebVal left, AlgebVal right)
         {
             if (left.Coaf == 0)
@@ -140,59 +146,39 @@ namespace AlgebraicExprssionIntrrupter
             return new AlgebVal(left.Coaf - right.Coaf, left.Pow);
         }
 
-        public static bool operator ==(AlgebVal left, AlgebVal right)
-        {
-            return 
-                (left.Coaf == 0 && right.Coaf == 0) 
-                    ? true 
-                    : left.Coaf == right.Coaf && left.Pow == right.Pow;
-        }
-
-        public static bool operator !=(AlgebVal left, AlgebVal right)
-        {
-            return !(left == right);
-        }
+        public static bool operator ==(AlgebVal left, AlgebVal right) => 
+            (left.Coaf == 0 && right.Coaf == 0) 
+                ? true 
+                : left.Coaf == right.Coaf && left.Pow == right.Pow;
+        
+        public static bool operator !=(AlgebVal left, AlgebVal right) =>
+            !(left == right);
 
         public static implicit operator AlgebVal(float i) =>
             new AlgebVal(i, 0);
         
-
         public override string ToString() =>
             this == Zero ? "0" : (Coaf == 0 ? "" : Coaf.ToString()) + ((Pow > 1) ? "x^" + Pow.ToString() : Pow == 1 ? "x" : "");
+        #endregion
     }
 
+    /// <summary>
+    /// represents an algeb expression
+    /// </summary>
     class AlgebExpression
     {
         public AlgebExpression left;
         public Operation op;
         public AlgebExpression right;
         public AlgebVal? value;
-
-        public Trinom ToTrinom()
-        {
-            if (this.op == Operation.Equality)
-                return Trinom.Parse(this.left.ToString());
-            return Trinom.Parse(this.ToString());
-        }
-
-        public bool IsDivisibleBy(AlgebExpression tree)
-        {
-            if (this.op != Operation.Multiplication)
-                return false;
-            if (this == tree)
-                return true;
-            else
-                return 
-                    this.left.IsDivisibleBy(tree) 
-                    || this.right.IsDivisibleBy(tree);
-        }
-
+        
+        #region Simplifing & helpers
         public AlgebExpression SimplifyAll() =>
             this
             .SimplifyDivision()
             .SimplifyEquality()
-            .SimplifyMultiplication()
             .SubtructionToNegAddition()
+            .SimplifyMultiplication()
             .LeftAlignAddition()
             .SimplifyZeroAddition()
             .SimplifyAddition();
@@ -210,6 +196,28 @@ namespace AlgebraicExprssionIntrrupter
             tree.left = tree.left.SimplifyAddition();
             tree = tree.left.LookAndAddValue(right.value.Value);
             return tree;
+        }
+
+        public bool IsDivisibleBy(AlgebExpression tree)
+        {
+            if (this.op == Operation.Value && tree.op == Operation.Value)
+                return true;
+            if (this.op == Operation.Value)
+                return false;
+            if (this == tree)
+                return true;
+            else
+            {
+                if (this.op == Operation.Multiplication)
+                    return
+                        this.left.IsDivisibleBy(tree)
+                        || this.right.IsDivisibleBy(tree);
+                if (this.op == Operation.Addition || this.op == Operation.Subtraction)
+                    return
+                        this.left.IsDivisibleBy(tree)
+                        && this.right.IsDivisibleBy(tree);
+            }
+            return false;
         }
 
         private AlgebExpression LookAndAddValue(AlgebVal val)
@@ -247,11 +255,35 @@ namespace AlgebraicExprssionIntrrupter
             if (this.op == Operation.Value)
                 return this;
             var temp = this.LeftAlignAddition();
-
-            if (temp.right.value.Value.Coaf == 0)
-                return temp.left.SimplifyZeroAddition();
+            if (this.op != Operation.Equality)
+            {
+                if (temp.right.value.Value.Coaf == 0)
+                    return temp.left.SimplifyZeroAddition();
+                else
+                    return temp.left.SimplifyZeroAddition() + temp.right;
+            }
             else
-                return temp.left.SimplifyZeroAddition() + temp.right;
+            {
+                if (temp.right.value.Value.Coaf == 0)
+                    return 
+                        new AlgebExpression(
+                        temp.left.SimplifyZeroAddition(),
+                        Operation.Equality,
+                        0);
+                else
+                    return 
+                        new AlgebExpression(
+                        temp.left.SimplifyZeroAddition() + temp.right,
+                        Operation.Equality,
+                        0);
+            }
+        }
+
+        public Trinom ToTrinom()
+        {
+            if (this.op == Operation.Equality)
+                return Trinom.Parse(this.left.ToString());
+            return Trinom.Parse(this.ToString());
         }
 
         public AlgebExpression LeftAlignAddition()
@@ -273,6 +305,11 @@ namespace AlgebraicExprssionIntrrupter
             {
                 left = left.LeftAlignAddition();
                 right = right.LeftAlignAddition();
+                if (this.right.op == Operation.Value)
+                    return left.LeftAlignAddition() + right;
+                if (this.left.op == Operation.Value)
+                    return right.LeftAlignAddition() + left;
+
                 return new AlgebExpression
                     (((left.left + right.right)
                         + left.right)
@@ -333,13 +370,9 @@ namespace AlgebraicExprssionIntrrupter
                 this.IsPartOf(bigTree.left)
                 || this.IsPartOf(bigTree.right);
         }
+        #endregion
 
-        public static implicit operator AlgebExpression(AlgebVal av) =>
-            new AlgebExpression(av);
-
-        public static implicit operator AlgebExpression(float i) =>
-            new AlgebExpression(i);
-
+        #region ctors
         public AlgebExpression(AlgebExpression l, Operation o, AlgebExpression r)
         {
             left = l; op = o; right = r;
@@ -355,10 +388,11 @@ namespace AlgebraicExprssionIntrrupter
         {
             left = tree.left; op = tree.op; right = tree.right; value = tree.value;
         }
+        #endregion
 
         public static AlgebExpression Parse(string s)
         {
-            s = new string(s.Where(c => c != ' ').ToArray());
+            s = new string(s.ToLower().Where(c => c != ' ').ToArray());
             Regex alexreg = new Regex(@"^[\(\)0-9\.\-\+/\*x^]+=?[\(\)0-9\.\-\+/\*x^]*$");
             if (!alexreg.IsMatch(s))
                 throw new FormatException("bad format");
@@ -453,7 +487,15 @@ namespace AlgebraicExprssionIntrrupter
             #endregion
 
             throw new Exception();
-        }
+        }       
+
+        #region Operators
+
+        public static implicit operator AlgebExpression(AlgebVal av) =>
+            new AlgebExpression(av);
+
+        public static implicit operator AlgebExpression(float i) =>
+            new AlgebExpression(i);
 
         public static bool operator ==(AlgebExpression left, AlgebExpression right)
         {
@@ -540,8 +582,13 @@ namespace AlgebraicExprssionIntrrupter
                     return (right / left.right) * left.left;
             }
 
-            if (right.op == Operation.Division && right.right == left)
-                return right;
+            if (right.op == Operation.Division)
+            {
+                if (right.right.IsDivisibleBy(left))
+                    return right.left / (right.right / left);
+                if (right.IsDivisibleBy(left.right))
+                    return (left / right.right) * right.left;
+            }
 
 
             if (left.op == Operation.Addition || left.op == Operation.Subtraction)
@@ -565,14 +612,42 @@ namespace AlgebraicExprssionIntrrupter
 
         public static AlgebExpression operator /(AlgebExpression left, AlgebExpression right)
         {
+            // v/1 => v
             if (right.op == Operation.Value && right.value.Value == AlgebVal.One)
-                return left;
+                return left;;
 
+            //value division
             if (left.op == Operation.Value
                 && right.op == Operation.Value 
                 && left.value.Value.Pow >= right.value.Value.Pow)
                 return new AlgebExpression(left.value.Value / right.value.Value);
 
+            //canceling
+            if (left.IsDivisibleBy(right))
+            {
+                if (left.op == Operation.Multiplication)
+                {
+                    if (left.left.IsDivisibleBy(right))
+                        return left.right * (left.left / right);
+                    if (left.right.IsDivisibleBy(right))
+                        return left.left * (left.right / right);
+                }
+
+                if (left.op == Operation.Addition)
+                {
+                    if (left.left.IsDivisibleBy(right) &&
+                        left.right.IsDivisibleBy(right))
+                        return (left.left / right) + (left.right / right);
+                }
+
+                if (left.op == Operation.Subtraction)
+                {
+                    if (left.left.IsDivisibleBy(right) &&
+                        left.right.IsDivisibleBy(right))
+                        return (left.left / right) - (left.right / right);
+                }
+            }
+            
             if (left.op == Operation.Equality && right.op == Operation.Equality)
                 throw new InvalidOperationException("can't be both =");
 
@@ -610,9 +685,14 @@ namespace AlgebraicExprssionIntrrupter
             }
             return "";
         }
+
+        #endregion
     }
-    
-    class Trinom
+
+    /// <summary>
+    /// represents a trinom
+    /// </summary>
+    class Trinom    
     {
         public float a, b, c;
         public Trinom(float _a, float _b, float _c)
@@ -620,6 +700,10 @@ namespace AlgebraicExprssionIntrrupter
             a = _a; b = _b; c = _c;
         }
 
+        /// <summary>
+        /// finds the solution
+        /// </summary>
+        /// <returns></returns>
         public float[] FindSolution()
         {
             if (a == 0.0f)
