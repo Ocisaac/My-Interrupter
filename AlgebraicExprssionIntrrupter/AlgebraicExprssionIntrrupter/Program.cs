@@ -28,12 +28,12 @@ namespace AlgebraicExprssionIntrrupter
                 }
                 catch (Exception ex)
                 {
-                    //var s = $@"C:\Users\user\Desktop\LOG{DateTime.Now.Millisecond + DateTime.Now.Second * 100 + DateTime.Now.Second * 6000}.txt";
-                    //File.Create(s).Dispose();
-                    //using (var sw = new StreamWriter(s))
-                    //{
-                    //    sw.WriteLine(ex.ToString());
-                    //}
+                    var s = $@"C:\Users\user\Desktop\LOG{DateTime.Now.Millisecond + DateTime.Now.Second * 100 + DateTime.Now.Second * 6000}.txt";
+                    File.Create(s).Dispose();
+                    using (var sw = new StreamWriter(s))
+                    {
+                        sw.WriteLine(ex.ToString());
+                    }
                     
                     Console.WriteLine(ex.Message);
                 }
@@ -389,13 +389,14 @@ namespace AlgebraicExprssionIntrrupter
 
         public static AlgebExpression Parse(string s)
         {
+            //checking if it is of the right format
             s = new string(s.ToLower().Where(c => c != ' ').ToArray());
             Regex alexreg = new Regex(@"^[\(\)0-9\.\-\+/\*x^]+=?[\(\)0-9\.\-\+/\*x^]*$");
             if (!alexreg.IsMatch(s))
                 throw new FormatException("bad format");
 
+            //init values
             AlgebVal v = AlgebVal.Zero;
-            string InsideBrackets = "";
             int bracketCount = 0;
 
             if (s.Count(c => c == '(') != s.Count(c => c == ')'))
@@ -420,9 +421,7 @@ namespace AlgebraicExprssionIntrrupter
                     bracketCount++;
                 if (s[i] == ')')
                     bracketCount--;
-                if (bracketCount != 0)
-                    InsideBrackets = s[i] + InsideBrackets;
-                else
+                if (bracketCount == 0)
                 {
                     if (s[i] == '=')
                         return new AlgebExpression(
@@ -439,9 +438,7 @@ namespace AlgebraicExprssionIntrrupter
                     bracketCount++;
                 if (s[i] == ')')
                     bracketCount--;
-                if (bracketCount != 0)
-                    InsideBrackets = s[i] + InsideBrackets;
-                else
+                if (bracketCount == 0)                
                 {
                     if (s[i] == '+')
                         return new AlgebExpression(
@@ -464,9 +461,7 @@ namespace AlgebraicExprssionIntrrupter
                     bracketCount++;
                 if (s[i] == ')')
                     bracketCount--;
-                if (bracketCount != 0)
-                    InsideBrackets = s[i] + InsideBrackets;
-                else
+                if (bracketCount == 0)
                 {
                     if (s[i] == '*')
                         return new AlgebExpression(
