@@ -27,4 +27,4 @@ I hope you'll find my learning process intresting.
 |calcu arith | DONE|
 |parse algeb | DONE|
 |simpl algeb | DONE| 
-|solve algeb | TO FIX|
+|solve algeb | DONE| 
