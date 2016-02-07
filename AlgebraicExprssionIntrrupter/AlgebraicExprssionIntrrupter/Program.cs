@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -10,7 +11,7 @@ namespace AlgebraicExprssionIntrrupter
 {
     class Program
     {
-        // todo : varify solutions
+        
         static void Main(string[] args)
         {
             while (true)
@@ -18,6 +19,10 @@ namespace AlgebraicExprssionIntrrupter
                 try
                 {
                     var treeEx = AlgebExpression.Parse(Console.ReadLine());
+                    //todo: fix division simpling
+                    //      or maybe it's other simping that are wrong
+                    // test with: 
+                    //      1 /(x+1) + 2/(3*(x+1)) = x
                     var simpTree = treeEx.SimplifyAll();
                     var solutions = simpTree.ToTrinom().FindSolution();
 
@@ -26,6 +31,13 @@ namespace AlgebraicExprssionIntrrupter
                 }
                 catch (Exception ex)
                 {
+                    //var s = $@"C:\Users\user\Desktop\LOG{DateTime.Now.Millisecond + DateTime.Now.Second * 100 + DateTime.Now.Second * 6000}.txt";
+                    //File.Create(s).Dispose();
+                    //using (var sw = new StreamWriter(s))
+                    //{
+                    //    sw.WriteLine(ex.ToString());
+                    //}
+                    
                     Console.WriteLine(ex.Message);
                 }
                 Console.WriteLine("=========================================");
@@ -49,6 +61,7 @@ namespace AlgebraicExprssionIntrrupter
         public int Pow;
 
         public static AlgebVal Zero = new AlgebVal(0, 0);
+        public static AlgebVal One = new AlgebVal(1, 0);
 
         public AlgebVal(float coaf, int pow)
         {
@@ -160,6 +173,18 @@ namespace AlgebraicExprssionIntrrupter
             if (this.op == Operation.Equality)
                 return Trinom.Parse(this.left.ToString());
             return Trinom.Parse(this.ToString());
+        }
+
+        public bool IsDivisibleBy(AlgebExpression tree)
+        {
+            if (this.op != Operation.Multiplication)
+                return false;
+            if (this == tree)
+                return true;
+            else
+                return 
+                    this.left.IsDivisibleBy(tree) 
+                    || this.right.IsDivisibleBy(tree);
         }
 
         public AlgebExpression SimplifyAll() =>
@@ -292,9 +317,21 @@ namespace AlgebraicExprssionIntrrupter
             
             if (currTree.op == Operation.Division)
             {
-                bigTree = bigTree * currTree.right;
+                if (currTree.IsPartOf(bigTree))
+                    bigTree = bigTree * currTree.right;
             }
             return rtnBig ? bigTree : currTree;
+        }
+
+        private bool IsPartOf(AlgebExpression bigTree)
+        {
+            if (this == bigTree)
+                return true;
+            if (bigTree.op == Operation.Value)
+                return false;
+            return
+                this.IsPartOf(bigTree.left)
+                || this.IsPartOf(bigTree.right);
         }
 
         public static implicit operator AlgebExpression(AlgebVal av) =>
@@ -402,8 +439,8 @@ namespace AlgebraicExprssionIntrrupter
                 {
                     if (s[i] == '*')
                         return new AlgebExpression(
-                            Parse(s.Substring(0, i))
-                            *
+                            Parse(s.Substring(0, i)),
+                            Operation.Multiplication,
                             Parse(s.Substring(i + 1, s.Length - (i + 1))));
 
                     if (s[i] == '/')
@@ -495,8 +532,13 @@ namespace AlgebraicExprssionIntrrupter
             if (right.op == Operation.Equality)
                 return new AlgebExpression(right.left * left, Operation.Equality, right.right * left);
 
-            if (left.op == Operation.Division && left.right == right)
-                return left.left;
+            if (left.op == Operation.Division)
+            {
+                if (left.right.IsDivisibleBy(right))
+                    return left.left / (left.right / right);
+                if (right.IsDivisibleBy(left.right))
+                    return (right / left.right) * left.left;
+            }
 
             if (right.op == Operation.Division && right.right == left)
                 return right;
@@ -523,6 +565,9 @@ namespace AlgebraicExprssionIntrrupter
 
         public static AlgebExpression operator /(AlgebExpression left, AlgebExpression right)
         {
+            if (right.op == Operation.Value && right.value.Value == AlgebVal.One)
+                return left;
+
             if (left.op == Operation.Value
                 && right.op == Operation.Value 
                 && left.value.Value.Pow >= right.value.Value.Pow)
