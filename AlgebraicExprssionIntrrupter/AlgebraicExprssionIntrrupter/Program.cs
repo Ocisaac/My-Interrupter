@@ -19,10 +19,7 @@ namespace AlgebraicExprssionIntrrupter
                 try
                 {
                     var treeEx = AlgebExpression.Parse(Console.ReadLine());
-                    //todo: fix division simpling
-                    //      or maybe it's other simping that are wrong
-                    // test with: 
-                    //      1 /(x+1) + 2/(3*(x+1)) = x
+
                     var simpTree = treeEx.SimplifyAll();
                     var solutions = simpTree.ToTrinom().FindSolution();
 
