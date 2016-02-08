@@ -22,18 +22,30 @@ namespace AlgebraicExprssionIntrrupter
 
                     var simpTree = treeEx.SimplifyAll();
                     var solutions = simpTree.ToTrinom().FindSolution();
+                    
+                    switch (solutions.type)
+                    {
+                        case SolutionType.Some:
+                            foreach (var sol in solutions.solutions)
+                                Console.WriteLine(sol);
+                            break;
+                        case SolutionType.All:
+                            Console.WriteLine("any x");
+                            break;
+                        case SolutionType.None:
+                            Console.WriteLine("none");
+                            break;
+                    }
 
-                    foreach (var sol in solutions)
-                        Console.WriteLine(sol);
                 }
                 catch (Exception ex)
                 {
-                    var s = $@"C:\Users\user\Desktop\LOG{DateTime.Now.Millisecond + DateTime.Now.Second * 100 + DateTime.Now.Second * 6000}.txt";
-                    File.Create(s).Dispose();
-                    using (var sw = new StreamWriter(s))
-                    {
-                        sw.WriteLine(ex.ToString());
-                    }
+                    //var s = $@"C:\Users\user\Desktop\LOG{DateTime.Now.Millisecond + DateTime.Now.Second * 100 + DateTime.Now.Second * 6000}.txt";
+                    //File.Create(s).Dispose();
+                    //using (var sw = new StreamWriter(s))
+                    //{
+                    //    sw.WriteLine(ex.ToString());
+                    //}
                     
                     Console.WriteLine(ex.Message);
                 }
@@ -140,7 +152,7 @@ namespace AlgebraicExprssionIntrrupter
         {
             if (left.Pow != right.Pow && left.Coaf != 0 && right.Coaf != 0)
                 throw new InvalidOperationException("must have same power");
-            return new AlgebVal(left.Coaf - right.Coaf, left.Pow);
+            return new AlgebVal(left.Coaf - right.Coaf, left.Pow == 0 ? right.Pow : left.Pow);
         }
 
         public static bool operator ==(AlgebVal left, AlgebVal right) => 
@@ -696,17 +708,21 @@ namespace AlgebraicExprssionIntrrupter
         /// finds the solution
         /// </summary>
         /// <returns></returns>
-        public float[] FindSolution()
+        public Solution FindSolution()
         {
             if (a == 0.0f)
-                return new float[] { -(c / b) };
+                if (b == 0.0f)
+                    if (c == 0.0f)
+                        return new Solution(SolutionType.All);
+                    else return new Solution(SolutionType.None);
+                else return new Solution(new[] { -(c / b) });
 
             if (b * b - 4 * a * c >= 0)
-                return new float[] 
+                return new Solution( new[] 
                 {
                     (float)(-b + Sqrt(b * b - 4 * a * c)) / (a * 2.0f),
                     (float)(-b - Sqrt(b * b - 4 * a * c)) / (a * 2.0f)
-                };
+                });
             else
                 throw new InvalidOperationException("delta must be >= 0");
         }
@@ -738,5 +754,28 @@ namespace AlgebraicExprssionIntrrupter
             return tri;
         }
 
+    }
+
+    class Solution
+    {
+        public SolutionType type;
+        public float[] solutions;
+
+        public Solution(SolutionType _type)
+        {
+            type = _type;
+        }
+
+        public Solution(float[] fs)
+        {
+            solutions = fs; type = SolutionType.Some;
+        }
+    }
+
+    enum SolutionType
+    {
+        Some,
+        All,
+        None,
     }
 }
