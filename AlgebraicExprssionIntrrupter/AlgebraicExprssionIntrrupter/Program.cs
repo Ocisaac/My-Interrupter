@@ -601,9 +601,9 @@ namespace AlgebraicExprssionIntrrupter
             if (right.op == Operation.Addition || right.op == Operation.Subtraction)
                 return new AlgebExpression(right.left * left, right.op, right.right * left);
             if (left.op == Operation.Multiplication)
-                return new AlgebExpression(left.left * right, Operation.Multiplication, left.right * right);
+                return new AlgebExpression(left.left * right, Operation.Multiplication, left.right);
             if (right.op == Operation.Multiplication)
-                return new AlgebExpression(right.left * left, Operation.Multiplication, right.right * left);
+                return new AlgebExpression(right.left * left, Operation.Multiplication, right.right);
 
             if (left.op == Operation.Value)
                 return new AlgebExpression(left.value.Value * right.left);

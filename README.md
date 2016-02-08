@@ -14,9 +14,9 @@ I hope you'll find my learning process intresting.
 
 4. Parsed equations like `2x + 5 = 4`
 
-5. Be able to simplfy equations
+5. Simplfied equations
 
-6. Be able to solve equations (only up to quadratic)
+6. Solved equations (up to quadratic)
 
 ===================================================
 
