@@ -209,8 +209,8 @@ namespace AlgebraicExprssionIntrrupter
 
         public bool IsDivisibleBy(AlgebExpression tree)
         {
-            if (this.op == Operation.Value && tree.op == Operation.Value)
-                return true;
+            if (this.op == Operation.Value && tree.op == Operation.Value this.value.Value.Pow >= tree.value.Value.Pow)
+                return this.value.Value.Pow >= tree.value.Value.Pow;
             if (this.op == Operation.Value)
                 return false;
             if (this == tree)
