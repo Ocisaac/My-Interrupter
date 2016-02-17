@@ -15,15 +15,11 @@ namespace AlgebraicExprssionIntrrupter
         {
             while (true)
             {
-                   try
-                   {
-                //to fix for (9 - x) / (x ^ 2 + 2x + 1) +1 / (x ^ 2 - 1) = 1 / (x - 1)
-                var treeEx = AlgebExpression.Parse(Console.ReadLine());
-                Console.WriteLine(treeEx.Factor().SimplifyEquality());
-
+                try
+                {
+                    var treeEx = AlgebExpression.Parse(Console.ReadLine());
                     var simpTree = treeEx.SimplifyAll();
                     var solutions = simpTree.ToTrinom().FindSolution();
-                //(9 - x) / (x ^ 2 + 2x + 1) +1 / (x ^ 2 - 1) = 1 / (x - 1)
                     switch (solutions.type)
                     {
                         case SolutionType.Some:
@@ -41,19 +37,16 @@ namespace AlgebraicExprssionIntrrupter
                 }
                 catch (FormatException ex)
                 {
-                    //var s = $@"C:\Users\user\Desktop\LOG{DateTime.Now.Millisecond + DateTime.Now.Second * 100 + DateTime.Now.Second * 6000}.txt";
-                    //File.Create(s).Dispose();
-                    //using (var sw = new StreamWriter(s))
-                    //{
-                    //    sw.WriteLine(ex.ToString());
-                    //}
-              
                     Console.WriteLine(ex.Message);
                 }
                 catch (InvalidOperationException ex)
                 {
                     Console.WriteLine(ex.Message);
                 }
+               //catch (Exception ex)
+               //{
+               //    Console.WriteLine(ex.Message);
+               //}
                 Console.WriteLine("=========================================");
             }
         }
@@ -196,8 +189,10 @@ namespace AlgebraicExprssionIntrrupter
         public AlgebExpression SimplifyAll() =>
             this
             .Factor()
-            .SimplifyDivision()
             .SimplifyEquality()
+            .SubtructionToNegAddition()
+            .SimplifyDivision()
+            .SimplifyDivision()
             .SubtructionToNegAddition()
             .SimplifyMultiplication()
             .LeftAlignAddition()
@@ -210,16 +205,16 @@ namespace AlgebraicExprssionIntrrupter
                 return this;
             if (this.op == Operation.Equality)
                 return new AlgebExpression(
-                    this.left.Factor(), 
-                    Operation.Equality, 
+                    this.left.Factor(),
+                    Operation.Equality,
                     this.right.Factor());
             try
             {
-                var trinom = this.SubtructionToNegAddition().ToTrinom();
+                var trinom = this.SubtructionToNegAddition().SimplifyAddition().ToTrinom();
                 if (trinom.a != 0)
                 {
-                    var fst = trinom.FindSolution().solutions[0]*-1;
-                    var snd = trinom.FindSolution().solutions[1]*-1;
+                    var fst = trinom.FindSolution().solutions[0] * -1;
+                    var snd = trinom.FindSolution().solutions[1] * -1;
                     string s1 = fst.ToString();
                     string s2 = snd.ToString();
                     if (fst >= 0)
@@ -228,7 +223,7 @@ namespace AlgebraicExprssionIntrrupter
                         s2 = "+" + snd.ToString();
                     string toParse = $"({trinom.a}*(x{s1})*(x{s2}))";
                     if (trinom.a == 1)
-                        toParse = $"((x{s1})*(x{s2}))";                    
+                        toParse = $"((x{s1})*(x{s2}))";
                     var rtn = AlgebExpression.Parse(toParse);
                     return rtn;
                 }
@@ -289,22 +284,12 @@ namespace AlgebraicExprssionIntrrupter
                     return
                         this.left.IsDivisibleBy(tree)
                         || this.right.IsDivisibleBy(tree);
-                if (this.op == Operation.Addition /*|| this.op == Operation.Subtraction*/)
+                if (this.op == Operation.Addition || this.op == Operation.Subtraction)
                 {
                     var newThis = this.SubtructionToNegAddition();
                     tree = tree.SubtructionToNegAddition();
-                    bool rtn = false;
-                    if (right.op == Operation.Value)
-                        rtn = (newThis.left.IsDivisibleBy(tree)
-                                && newThis.right.IsDivisibleBy(tree));
-                    else
-                        rtn = (newThis.left.IsDivisibleBy(tree)
-                                && newThis.right.IsDivisibleBy(tree))
-                            || (newThis.left.IsDivisibleBy(tree.left)
-                                && newThis.right.IsDivisibleBy(tree.right))
-                            || (newThis.left.IsDivisibleBy(tree.right)
-                                && newThis.right.IsDivisibleBy(tree.left));
-                    return rtn;
+                    return (newThis.left.IsDivisibleBy(tree)
+                            && newThis.right.IsDivisibleBy(tree));
                 }
             }
             return false;
@@ -406,7 +391,10 @@ namespace AlgebraicExprssionIntrrupter
                         + right.left)
                         .LeftAlignAddition();
             }
-
+            else
+            {
+                throw new InvalidOperationException("to align addition all ops must be addition");
+            }
             throw new Exception("sumthing went wrong");
         }
 
@@ -434,7 +422,7 @@ namespace AlgebraicExprssionIntrrupter
             var myThis = this;
             return SimplifyDivsion(this, ref myThis, true);
         }
-       
+
         private static AlgebExpression SimplifyDivsion(AlgebExpression currTree, ref AlgebExpression bigTree, bool rtnBig)
         {
             if (currTree.op == Operation.Value)
@@ -445,10 +433,10 @@ namespace AlgebraicExprssionIntrrupter
 
             if (currTree.op == Operation.Division)
             {
-            //    if (currTree.left.IsDivisibleBy(currTree.right))
-            //        return SimplifyDivsion((currTree.left / currTree.right), ref bigTree, false);
+                if (currTree.left.IsDivisibleBy(currTree.right))
+                    return SimplifyDivsion((currTree.left / currTree.right), ref bigTree, false);
                 if (currTree.IsPartOf(bigTree))
-                    bigTree = bigTree * currTree.right;
+                    bigTree = (bigTree * currTree.right).Factor();
             }
             return rtnBig ? bigTree : currTree;
         }
@@ -491,10 +479,12 @@ namespace AlgebraicExprssionIntrrupter
             Regex alexreg = new Regex(@"^[\(\)0-9\.\-\+/\*x^]+=?[\(\)0-9\.\-\+/\*x^]*$");
             if (!alexreg.IsMatch(s))
                 throw new FormatException("bad format");
-
             //init values
             AlgebVal v = AlgebVal.Zero;
             int bracketCount = 0;
+
+            if (s.StartsWith("-"))
+                s = "0" + s;
 
             if (s.Count(c => c == '(') != s.Count(c => c == ')'))
                 throw new FormatException("parens must balance");
@@ -512,7 +502,7 @@ namespace AlgebraicExprssionIntrrupter
                     if (amountOfParen < 0)
                     {
                         above0 = false;
-                        break;                        
+                        break;
                     }
                 }
                 if (above0)
@@ -521,9 +511,7 @@ namespace AlgebraicExprssionIntrrupter
 
             if (AlgebVal.TryParse(s, out v))
                 return new AlgebExpression(v);
-            
-            if (s.StartsWith("-"))
-                s = "0x^0" + s;
+
 
             #region =
             for (int i = s.Length - 1; i >= 0; i--)
@@ -605,7 +593,7 @@ namespace AlgebraicExprssionIntrrupter
             if ((object)left == null || (object)right == null)
                 return false;
 
-             if (left.op == Operation.Value && right.op == Operation.Value)
+            if (left.op == Operation.Value && right.op == Operation.Value)
                 return left.value == right.value;
 
 
@@ -621,7 +609,7 @@ namespace AlgebraicExprssionIntrrupter
 
             if (left.op == Operation.Multiplication && left.left == 1)
                 return left.right == right;
-            if (left.op == Operation.Multiplication|| left.op == Operation.Division && left.right == 1)
+            if (left.op == Operation.Multiplication || left.op == Operation.Division && left.right == 1)
                 return left.left == right;
 
             if (right.op == Operation.Multiplication && right.left == 1)
@@ -685,7 +673,7 @@ namespace AlgebraicExprssionIntrrupter
                 throw new InvalidOperationException("can't be both =");
 
             if (left.op == Operation.Equality)
-               return new AlgebExpression(left.left - right, Operation.Equality, left.right - right);
+                return new AlgebExpression(left.left - right, Operation.Equality, left.right - right);
             if (right.op == Operation.Equality)
                 return new AlgebExpression(right.left - left, Operation.Equality, right.right - left);
 
@@ -699,7 +687,7 @@ namespace AlgebraicExprssionIntrrupter
         }
 
         public static AlgebExpression operator -(AlgebExpression expr) =>
-            -1*expr;
+            -1 * expr;
 
         public static AlgebExpression operator *(AlgebExpression left, AlgebExpression right)
         {
@@ -781,34 +769,40 @@ namespace AlgebraicExprssionIntrrupter
                 return left;
 
             if (left.op == Operation.Value && right.op == Operation.Value)
-                new AlgebExpression(
+                return new AlgebExpression(
                     left.value.Value * right.value.Value
                     );
-            
+
+
+            if (left.op == Operation.Division)
+            {
+                if (right.IsDivisibleBy(left.right) || right.CanCancelWith(left.right))
+                    return (right / left.right) * left.left;
+                else return (right * left.left) / left.right;
+            }
+            if (right.op == Operation.Division)
+            {
+                if (left.IsDivisibleBy(right.right) || left.CanCancelWith(right.right))
+                    return (left / right.right) * right.left;
+                else return (left * right.left) / right.right;
+            }
+
             if (left.op == Operation.Addition || left.op == Operation.Subtraction)
                 return new AlgebExpression(
-                    left.left * right, left.op,  left.right * right
+                    left.left * right, left.op, left.right * right
                     );
             if (right.op == Operation.Addition || right.op == Operation.Subtraction)
                 return new AlgebExpression(
                     right.left * left, right.op, right.right * left
                     );
-
             if (left.op == Operation.Multiplication)
                 return new AlgebExpression(
-                    left.left * right, Operation.Multiplication, left.left
+                    left.left * right, Operation.Multiplication, left.right
                     );
             if (right.op == Operation.Multiplication)
                 return new AlgebExpression(
-                    right.left * left, Operation.Multiplication, right.left
+                    right.left * left, Operation.Multiplication, right.right
                     );
-
-            if (left.op == Operation.Division)
-                if (right.IsDivisibleBy(left.right))
-                    return (right / left.right) * left.left;
-            if (right.op == Operation.Division)
-                if (left.IsDivisibleBy(right.right))
-                    return (left / right.right) * right.left;
 
             return new AlgebExpression(left, Operation.Multiplication, right);
         }
@@ -906,6 +900,83 @@ namespace AlgebraicExprssionIntrrupter
             return new AlgebExpression(left, Operation.Division, right);
             */
             #endregion
+
+            if (left.op == Operation.Equality && right.op == Operation.Equality)
+                throw new InvalidOperationException("Can not divide two equations");
+            if (left.op == Operation.Equality)
+                return new AlgebExpression(
+                    left.left / right, Operation.Equality, left.right / right
+                    );
+            if (right.op == Operation.Equality)
+                return new AlgebExpression(
+                    right.left / left, Operation.Equality, right.right / left
+                    );
+
+            if (left == right)
+                return AlgebVal.One;
+            if (left.op == Operation.Value && left.value.Value == AlgebVal.Zero)
+                return AlgebVal.Zero;
+            if (left.IsDivisibleBy(right))
+            {
+                if (left.op == Operation.Value && right.op == Operation.Value)
+                    return left / right;
+                if (left.op == Operation.Multiplication)
+                {
+                    if (left.left.IsDivisibleBy(right))
+                        return (left.left / right) * left.right;
+                    if (left.right.IsDivisibleBy(right))
+                        return left.left * (left.right / right);
+                }
+
+                if (left.op == Operation.Addition)
+                {
+                    if (left.left.IsDivisibleBy(right) && left.right.IsDivisibleBy(right))
+                        return (left.left / right) + (left.right / right);
+                }
+            }
+
+            if (left.CanCancelWith(right))
+            {
+                if (left.op == Operation.Multiplication)
+                {
+                    if (left.left.CanCancelWith(right))
+                        return (left.left / right) * left.right;
+                    if (left.right.CanCancelWith(right))
+                        return (left.right / right) * left.left;
+                }
+                if (right.op == Operation.Multiplication)
+                {
+                    if (right.left.CanCancelWith(left))
+                        return (left / right.left) / right.right;
+                    if (right.right.CanCancelWith(left))
+                        return (left / right.right) / right.left;
+                }
+            }
+
+            if (right.op == Operation.Division)
+                return left * (right.right / right.left);
+
+            return new AlgebExpression(left, Operation.Division, right);
+        }
+
+        /// <summary>
+        /// only for multiplication canceling
+        /// </summary>
+        /// <param name="right"></param>
+        /// <returns></returns>
+        private bool CanCancelWith(AlgebExpression tree)
+        {
+            if (this.IsDivisibleBy(tree))
+                return true;
+            else if (this.op == Operation.Value || tree.op == Operation.Value)
+                return false;
+            if (this.op == Operation.Multiplication)
+                return this.left.CanCancelWith(tree)
+                    || this.right.CanCancelWith(tree);
+            if (tree.op == Operation.Multiplication)
+                return tree.CanCancelWith(this.right)
+                    || tree.CanCancelWith(this.left);
+            return false;
         }
 
         public override string ToString()
