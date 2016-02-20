@@ -26,5 +26,5 @@ I hope you'll find my learning process intresting.
 |parse arith | DONE|
 |calcu arith | DONE|
 |parse algeb | DONE|
-|simpl algeb | TO FIX| 
+|simpl algeb | DONE| 
 |solve algeb | DONE| 
