@@ -18,12 +18,11 @@ namespace AlgebraicExprssionIntrrupter
                 try
                 {
                     var treeEx = AlgebExpression.Parse(Console.ReadLine());
-                    var simpTree = treeEx.SimplifyAll();
-                    var solutions = simpTree.ToTrinom().FindSolution();
-                    switch (solutions.type)
+                    var solution = treeEx.GetSolution();
+                    switch (solution.type)
                     {
                         case SolutionType.Some:
-                            foreach (var sol in solutions.solutions)
+                            foreach (var sol in solution.solutions)
                                 Console.WriteLine(sol);
                             break;
                         case SolutionType.All:
@@ -183,6 +182,16 @@ namespace AlgebraicExprssionIntrrupter
         public Operation op;
         public AlgebExpression right;
         public AlgebVal? value;
+
+        private List<float> OutOfDomain { get; }
+        
+        public Solution GetSolution()
+        {
+            return this
+                .SimplifyAll()
+                .ToTrinom()
+                .FindSolution();                
+        }
 
         #region Simplifing & helpers
 
