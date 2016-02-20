@@ -135,9 +135,22 @@ namespace ArithmeticExpressionInterrupter
 
             if (s.StartsWith("(") && s.EndsWith(")"))
             {
-                int leftParen = s.Substring(1, s.Length - 2).IndexOf("(");
-                int rightParen = s.Substring(1, s.Length - 2).IndexOf(")");
-                if (leftParen <= rightParen)
+                //Checking if I get expression inside paren that balance eachother.
+                int amountOfParen = 0;
+                bool above0 = true;
+                foreach (var c in s.Substring(1, s.Length - 2))
+                {
+                    if (c == '(')
+                        amountOfParen++;
+                    if (c == ')')
+                        amountOfParen--;
+                    if (amountOfParen < 0)
+                    {
+                        above0 = false;
+                        break;
+                    }
+                }
+                if (above0)
                     return Parse(s.Substring(1, s.Length - 2));
             }
 
