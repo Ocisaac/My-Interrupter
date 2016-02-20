@@ -192,12 +192,135 @@ namespace AlgebraicExprssionIntrrupter
             .SimplifyEquality()
             .SubtructionToNegAddition()
             .SimplifyDivision()
-            .SimplifyDivision()
-            .SubtructionToNegAddition()
             .SimplifyMultiplication()
             .LeftAlignAddition()
             .SimplifyZeroAddition()
             .SimplifyAddition();
+
+        public Trinom ToTrinom()
+        {
+            if (this.op == Operation.Equality)
+                return Trinom.Parse(this.left.ToString());
+            return Trinom.Parse(this.ToString());
+        }
+
+        public AlgebExpression SimplifyAddition()
+        {
+            var tree = this.LeftAlignAddition();
+            if (tree.op == Operation.Equality)
+                return new AlgebExpression
+                    (this.left.SimplifyAddition(),
+                    Operation.Equality,
+                    right);
+            if (tree.op == Operation.Value)
+                return this;
+            tree.left = tree.left.SimplifyAddition();
+            tree = tree.left.LookAndAddValue(right.value.Value);
+            return tree;
+        }
+        public AlgebExpression SimplifyZeroAddition()
+        {
+            if (this.op == Operation.Value)
+                return this;
+            var temp = this.LeftAlignAddition();
+            if (this.op != Operation.Equality)
+            {
+                if (temp.right.value.Value.Coaf == 0)
+                    return temp.left.SimplifyZeroAddition();
+                else
+                    return temp.left.SimplifyZeroAddition() + temp.right;
+            }
+            else
+            {
+                if (temp.right.value.Value.Coaf == 0)
+                    return
+                        new AlgebExpression(
+                        temp.left.SimplifyZeroAddition(),
+                        Operation.Equality,
+                        0);
+                else
+                    return
+                        new AlgebExpression(
+                        temp.left.SimplifyZeroAddition() + temp.right,
+                        Operation.Equality,
+                        0);
+            }
+        }
+        public AlgebExpression LeftAlignAddition()
+        {
+            if (this.op == Operation.Equality)
+            {
+                var leftleft = left.LeftAlignAddition();
+                return new AlgebExpression(this.left.LeftAlignAddition(), Operation.Equality, right.LeftAlignAddition());
+            }
+            if (this.op == Operation.Value)
+                return this;
+            if (this.op != Operation.Addition)
+                throw new InvalidOperationException("to align addition all ops must be addition");
+            if (this.right.op == Operation.Value)
+                return left.LeftAlignAddition() + right;
+            if (this.left.op == Operation.Value)
+                return right.LeftAlignAddition() + left;
+            if (left.op == Operation.Addition && right.op == Operation.Addition)
+            {
+                left = left.LeftAlignAddition();
+                right = right.LeftAlignAddition();
+                if (this.right.op == Operation.Value)
+                    return left.LeftAlignAddition() + right;
+                if (this.left.op == Operation.Value)
+                    return right.LeftAlignAddition() + left;
+
+                return new AlgebExpression
+                    (((left.left + right.right)
+                        + left.right)
+                        + right.left)
+                        .LeftAlignAddition();
+            }
+            else
+            {
+                throw new InvalidOperationException("to align addition all ops must be addition");
+            }
+            throw new Exception("sumthing went wrong");
+        }
+        private AlgebExpression LookAndAddValue(AlgebVal val)
+        {
+            if (val.Coaf == 0)
+                return this;
+            if (this.op == Operation.Value)
+                return this + val;
+            if (this.op == Operation.Addition)
+            {
+                if (this.right.value.Value.Coaf == 0)
+                    return left.LookAndAddValue(val);
+                else if (this.right.value.Value.Pow == val.Pow)
+                    return left + (right.value.Value + val);
+                else
+                    return left.LookAndAddValue(val) + right;
+            }
+            else
+                throw new InvalidOperationException("can only be done on addition trees");
+        }        
+        public AlgebExpression SubtructionToNegAddition()
+        {
+            if (this.op == Operation.Value)
+                return value;
+            this.left = left.SubtructionToNegAddition();
+            this.right = right.SubtructionToNegAddition();
+            if (this.op == Operation.Subtraction)
+                return new AlgebExpression(left, Operation.Addition, right * -1);
+            return this;
+        }
+
+        public AlgebExpression SimplifyMultiplication()
+        {
+            if (op == Operation.Value)
+                return this;
+            left = left.SimplifyMultiplication();
+            right = right.SimplifyMultiplication();
+            if (op == Operation.Multiplication)
+                return left * right;
+            return this;
+        }
 
         public AlgebExpression Factor()
         {
@@ -252,22 +375,33 @@ namespace AlgebraicExprssionIntrrupter
                     );
             }
         }
-
-        public AlgebExpression SimplifyAddition()
+        public AlgebExpression SimplifyDivision()
         {
-            var tree = this.LeftAlignAddition();
-            if (tree.op == Operation.Equality)
-                return new AlgebExpression
-                    (this.left.SimplifyAddition(),
-                    Operation.Equality,
-                    right);
-            if (tree.op == Operation.Value)
-                return this;
-            tree.left = tree.left.SimplifyAddition();
-            tree = tree.left.LookAndAddValue(right.value.Value);
-            return tree;
+            if (this.ContainsOp(Operation.Division))
+            {
+                var myThis = this;
+                return SimplifyDivsion(this, ref myThis, true).SimplifyDivision();
+            }
+            return this;
         }
+        private static AlgebExpression SimplifyDivsion(AlgebExpression currTree, ref AlgebExpression bigTree, bool rtnBig)
+        {
+            if (currTree.op == Operation.Value)
+                return currTree;
 
+            currTree.left = SimplifyDivsion(currTree.left, ref bigTree, false);
+            currTree.right = SimplifyDivsion(currTree.right, ref bigTree, false);
+
+            if (currTree.op == Operation.Division)
+            {
+                if (currTree.left.IsDivisibleBy(currTree.right))
+                    return SimplifyDivsion((currTree.left / currTree.right), ref bigTree, false);
+                if (currTree.IsPartOf(bigTree))
+                    bigTree = (bigTree * currTree.right).Factor();
+            }
+            return rtnBig ? bigTree : currTree;
+        }
+        
         public bool IsDivisibleBy(AlgebExpression tree)
         {
             if (tree == null || this == null)
@@ -294,153 +428,6 @@ namespace AlgebraicExprssionIntrrupter
             }
             return false;
         }
-
-        private AlgebExpression LookAndAddValue(AlgebVal val)
-        {
-            if (val.Coaf == 0)
-                return this;
-            if (this.op == Operation.Value)
-                return this + val;
-            if (this.op == Operation.Addition)
-            {
-                if (this.right.value.Value.Coaf == 0)
-                    return left.LookAndAddValue(val);
-                else if (this.right.value.Value.Pow == val.Pow)
-                    return left + (right.value.Value + val);
-                else
-                    return left.LookAndAddValue(val) + right;
-            }
-            else
-                throw new InvalidOperationException("can only be done on addition trees");
-        }
-
-        public AlgebExpression SimplifyMultiplication()
-        {
-            if (op == Operation.Value)
-                return this;
-            left = left.SimplifyMultiplication();
-            right = right.SimplifyMultiplication();
-            if (op == Operation.Multiplication)
-                return left * right;
-            return this;
-        }
-
-        public AlgebExpression SimplifyZeroAddition()
-        {
-            if (this.op == Operation.Value)
-                return this;
-            var temp = this.LeftAlignAddition();
-            if (this.op != Operation.Equality)
-            {
-                if (temp.right.value.Value.Coaf == 0)
-                    return temp.left.SimplifyZeroAddition();
-                else
-                    return temp.left.SimplifyZeroAddition() + temp.right;
-            }
-            else
-            {
-                if (temp.right.value.Value.Coaf == 0)
-                    return
-                        new AlgebExpression(
-                        temp.left.SimplifyZeroAddition(),
-                        Operation.Equality,
-                        0);
-                else
-                    return
-                        new AlgebExpression(
-                        temp.left.SimplifyZeroAddition() + temp.right,
-                        Operation.Equality,
-                        0);
-            }
-        }
-
-        public Trinom ToTrinom()
-        {
-            if (this.op == Operation.Equality)
-                return Trinom.Parse(this.left.ToString());
-            return Trinom.Parse(this.ToString());
-        }
-
-        public AlgebExpression LeftAlignAddition()
-        {
-            if (this.op == Operation.Equality)
-            {
-                var leftleft = left.LeftAlignAddition();
-                return new AlgebExpression(this.left.LeftAlignAddition(), Operation.Equality, right.LeftAlignAddition());
-            }
-            if (this.op == Operation.Value)
-                return this;
-            if (this.op != Operation.Addition)
-                throw new InvalidOperationException("to align addition all ops must be addition");
-            if (this.right.op == Operation.Value)
-                return left.LeftAlignAddition() + right;
-            if (this.left.op == Operation.Value)
-                return right.LeftAlignAddition() + left;
-            if (left.op == Operation.Addition && right.op == Operation.Addition)
-            {
-                left = left.LeftAlignAddition();
-                right = right.LeftAlignAddition();
-                if (this.right.op == Operation.Value)
-                    return left.LeftAlignAddition() + right;
-                if (this.left.op == Operation.Value)
-                    return right.LeftAlignAddition() + left;
-
-                return new AlgebExpression
-                    (((left.left + right.right)
-                        + left.right)
-                        + right.left)
-                        .LeftAlignAddition();
-            }
-            else
-            {
-                throw new InvalidOperationException("to align addition all ops must be addition");
-            }
-            throw new Exception("sumthing went wrong");
-        }
-
-        public AlgebExpression SubtructionToNegAddition()
-        {
-            if (this.op == Operation.Value)
-                return value;
-            this.left = left.SubtructionToNegAddition();
-            this.right = right.SubtructionToNegAddition();
-            if (this.op == Operation.Subtraction)
-                return new AlgebExpression(left, Operation.Addition, right * -1);
-            return this;
-        }
-
-        public AlgebExpression SimplifyEquality()
-        {
-            if (op == Operation.Equality)
-                if (right != AlgebVal.Zero)
-                    return this - right;
-            return this;
-        }
-
-        public AlgebExpression SimplifyDivision()
-        {
-            var myThis = this;
-            return SimplifyDivsion(this, ref myThis, true);
-        }
-
-        private static AlgebExpression SimplifyDivsion(AlgebExpression currTree, ref AlgebExpression bigTree, bool rtnBig)
-        {
-            if (currTree.op == Operation.Value)
-                return currTree;
-
-            currTree.left = SimplifyDivsion(currTree.left, ref bigTree, false);
-            currTree.right = SimplifyDivsion(currTree.right, ref bigTree, false);
-
-            if (currTree.op == Operation.Division)
-            {
-                if (currTree.left.IsDivisibleBy(currTree.right))
-                    return SimplifyDivsion((currTree.left / currTree.right), ref bigTree, false);
-                if (currTree.IsPartOf(bigTree))
-                    bigTree = (bigTree * currTree.right).Factor();
-            }
-            return rtnBig ? bigTree : currTree;
-        }
-
         private bool IsPartOf(AlgebExpression bigTree)
         {
             if (this == bigTree)
@@ -451,6 +438,24 @@ namespace AlgebraicExprssionIntrrupter
                 this.IsPartOf(bigTree.left)
                 || this.IsPartOf(bigTree.right);
         }
+        private bool ContainsOp(Operation operation)
+        {
+            if (this.op == operation)
+                return true;
+            if (this.op == Operation.Value)
+                return false;
+            return this.left.ContainsOp(operation) || this.right.ContainsOp(operation);
+        }
+
+        public AlgebExpression SimplifyEquality()
+        {
+            if (op == Operation.Equality)
+                if (right != AlgebVal.Zero)
+                    return this - right;
+            return this;
+        }
+
+
         #endregion
 
         #region ctors
