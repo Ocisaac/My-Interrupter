@@ -13,7 +13,6 @@ namespace ArithmeticExpressionInterrupter
     {
         static void Main(string[] args)
         {
-            /*there it a problem with paren of the sort (2+1)/(2)*/
             while (true)
             {
                 ArithmeticEx ex1 = ArithmeticEx.Parse(Console.ReadLine());
