@@ -29,7 +29,9 @@ I hope you'll find my learning process intresting.
 |simpl algeb | DONE| 
 |solve algeb | DONE| 
 |domain|TODO|
-
+|Math|TODO|
+ 
 ##TOOD
 
 - Work on domain of solutions, eg. `1/x = 1/x` true for all x /= 0.
+- Wprk on Math project
