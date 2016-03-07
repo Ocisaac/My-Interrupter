@@ -34,4 +34,4 @@ I hope you'll find my learning process intresting.
 ##TOOD
 
 - Work on domain of solutions, eg. `1/x = 1/x` true for all x /= 0.
-- Wprk on Math project
+- Work on Math project
