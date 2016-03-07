@@ -28,3 +28,8 @@ I hope you'll find my learning process intresting.
 |parse algeb | DONE|
 |simpl algeb | DONE| 
 |solve algeb | DONE| 
+|domain|TODO|
+
+##TOOD
+
+- Work on domain of solutions, eg. `1/x = 1/x` true for all x /= 0.
