@@ -22,16 +22,18 @@ I hope you'll find my learning process intresting.
 
 |feature|status|
 |:---:|:---:|
-|parse parens| DONE|
-|parse arith | DONE|
-|calcu arith | DONE|
-|parse algeb | DONE|
-|simpl algeb | DONE| 
-|solve algeb | DONE| 
+|parse parens|DONE|
+|parse arith |DONE|
+|calcu arith |DONE|
+|parse algeb |DONE|
+|simpl algeb |DONE| 
+|solve algeb |DONE| 
 |domain|TODO|
 |Math|TODO|
+|library & winform|TODO|
  
 ##TOOD
 
 - Work on domain of solutions, eg. `1/x = 1/x` true for all x /= 0.
+- Migrate into a library and making a winform project
 - Work on Math project
